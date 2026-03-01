@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import news
+from routers import news,users
 from fastapi.middleware.cors import CORSMiddleware
 
 # 创建FastAPI实例
@@ -22,6 +22,7 @@ app.add_middleware(
 
 # 包含路由
 app.include_router(news.router)
+app.include_router(users.router)
 
 @app.get("/")
 async def root():
