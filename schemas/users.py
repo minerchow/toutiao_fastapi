@@ -33,3 +33,12 @@ class UserAuthResponse(BaseModel):
         populate_by_name=True, #alias 字段名兼容
         from_attributes=True, # 从 ORM 模型中读取数据
     )
+
+class UserUpdateRequest(BaseModel):
+    nickname:str = None
+    avatar:str = None
+    gender:str = None
+    bio:str = None
+    phone:str = None
+    
+    

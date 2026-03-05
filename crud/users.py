@@ -2,9 +2,9 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from models.users import User, UserToken
-from schemas.users import UserRequest
+from schemas.users import UserRequest, UserUpdateRequest
 from utils import security
 
 #根据用户名查询用户
@@ -46,4 +46,32 @@ async def authenticate_user(db: AsyncSession, username: str, password: str):
     if not security.verify_password(password, user.password):
         return None
     return user
+
+# 通过token查询用户
+async def get_user_by_token(db: AsyncSession, token: str):
+    query = select(UserToken).where(UserToken.token == token)
+    result = await db.execute(query)
+    db_token = result.scalars().one_or_none()
+    if not db_token:
+        return None
+    if db_token.expires_at < datetime.now():
+        return None
+    query = select(User).where(User.id == db_token.user_id) 
+    result = await db.execute(query)
+    return result.scalars().one_or_none()
+
+
+ # 更新用户信息
+async def update_user_info(db: AsyncSession, username: str, user_data: UserUpdateRequest):
+    # user_data 转换为字典，排除未设置的字段 没有设置的字段不更新
+    query = update(User).where(User.username == username).values(**user_data.model_dump(exclude_unset=True,
+    exclude_none=True))
+    result = await db.execute(query)
+    await db.commit()
+    # 检查更新是否成功
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="用户不存在")
+   # 获取更新后的用户信息
+    updated_user = await get_user_by_username(db, username)
+    return updated_user
         
