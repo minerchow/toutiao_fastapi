@@ -34,4 +34,13 @@ async def remove_favorite(data:FavoriteAddRequest,user:User=Depends(get_current_
         message="取消收藏新闻成功",
         data=result
     )
+
+@router.get("/list")
+async def get_favorite_list(page: int = Query(1, ge=1, alias="page"),
+                            page_size: int = Query(10, ge=1, le=100, alias="pageSize"),
+                            user:User=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+ 
+    return success_response(
+        message="获取收藏列表成功"
+    )
     
