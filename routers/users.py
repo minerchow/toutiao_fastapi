@@ -3,10 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.db_conf import get_db
 from models.users import User
 from utils.auth import get_current_user
-from schemas.users import UserAuthResponse, UserInfoResponse, UserRequest, UserUpdateRequest
-from crud.users import get_user_by_username, create_user, create_token, authenticate_user, update_user_info
+from schemas.users import UserAuthResponse, UserInfoResponse, UserRequest, UserUpdateRequest, UserChangePasswordRequest
+from crud.users import get_user_by_username, create_user, create_token, authenticate_user, update_user_info, update_user_password
 from utils.response import success_response
-
 router = APIRouter(prefix="/api/users",tags=["users"])
 
 @router.post("/register")
@@ -57,4 +56,17 @@ async def update_user(user_data:UserUpdateRequest,
         message="修改用户信息成功",
         data=UserInfoResponse.model_validate(updated_user)
     )
+
+@router.put('/password')
+async def update_password(password_data:UserChangePasswordRequest, 
+    user:User = Depends(get_current_user),db:AsyncSession = Depends(get_db)):
+    # 更新用户密码
+    res = await update_user_password(db, user, password_data)
+    #密码错误
+    if not res:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="修改密码失败")
+    return success_response(
+        message="修改密码成功"
+    )
+
 

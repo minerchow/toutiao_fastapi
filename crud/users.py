@@ -1,10 +1,11 @@
 
 from datetime import datetime, timedelta
 from uuid import uuid4
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from models.users import User, UserToken
-from schemas.users import UserRequest, UserUpdateRequest
+from schemas.users import UserRequest, UserUpdateRequest, UserChangePasswordRequest
 from utils import security
 
 #根据用户名查询用户
@@ -74,4 +75,16 @@ async def update_user_info(db: AsyncSession, username: str, user_data: UserUpdat
    # 获取更新后的用户信息
     updated_user = await get_user_by_username(db, username)
     return updated_user
+
+# 修改密码 验证旧密码  新密码加密 修改密码
+async def update_user_password(db: AsyncSession, user:User, password_data: UserChangePasswordRequest):
+    # 验证旧密码
+    if not security.verify_password(password_data.old_password, user.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="旧密码错误")
+    # 更新密码
+    user.password = security.get_hash_password(password_data.new_password)
+    db.add(user);
+    await db.commit()
+    await db.refresh(user)
+    return True
         
