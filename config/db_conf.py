@@ -1,25 +1,53 @@
+import os
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
- 
-# 数据库URL
-ASYNC_DATABASE_URL = "mysql+aiomysql://root:123456@localhost:3306/news_app?charset=utf8mb4"
- 
-# 创建异步引擎
-async_engine = create_async_engine(
-    ASYNC_DATABASE_URL,
-    echo=True,  # 可选：输出SQL日志
-    pool_size=10,  # 设置连接池中保持的持久连接数
-    max_overflow=20  # 设置连接池允许创建的额外连接数
-)
- 
-# 创建异步会话工厂
+
+load_dotenv()
+
+ENV = os.getenv("ENV", "development")
+
+DB_CONFIG = {
+    "development": {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", 3306)),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "database": os.getenv("DB_NAME", "news_app")
+    },
+    "test": {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": int(os.getenv("DB_PORT", 3306)),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "database": os.getenv("DB_NAME", "news_app_test")
+    },
+    "pre": {
+        "host": os.getenv("DB_HOST", ""),
+        "port": int(os.getenv("DB_PORT", 3306)),
+        "user": os.getenv("DB_USER", ""),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "database": os.getenv("DB_NAME", "news_app_pre")
+    },
+    "production": {
+        "host": os.getenv("DB_HOST", ""),
+        "port": int(os.getenv("DB_PORT", 3306)),
+        "user": os.getenv("DB_USER", ""),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "database": os.getenv("DB_NAME", "news_app")
+    }
+}
+
+db_config = DB_CONFIG.get(ENV, DB_CONFIG["development"])
+ASYNC_DATABASE_URL = f"mysql+aiomysql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}?charset=utf8mb4"
+
+async_engine = create_async_engine(ASYNC_DATABASE_URL, echo=(ENV == "development"), pool_size=10, max_overflow=20)
+
 AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
     class_=AsyncSession,
     expire_on_commit=False
 )
- 
- 
-# 依赖项，用于获取数据库会话
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
